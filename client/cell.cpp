@@ -14,6 +14,13 @@ namespace Maze
 	int maze_height;
 	bool grid_closed[maze_max_width][maze_max_height];
 	bool grid_path[maze_max_width * 2][maze_max_height * 2];
+	
+	struct maze_param
+	{
+		int maze_seed;
+		int maze_width;
+		int maze_height;
+	};
 
 	std::vector<int> cardinal_points;
 	void init_cardinal_points( void )
@@ -23,6 +30,68 @@ namespace Maze
 		cardinal_points.push_back( 1 );
 		cardinal_points.push_back( 2 );
 		cardinal_points.push_back( 3 );
+	}
+
+	void draw_cell( int x, int y )
+	{
+		int key = 0;
+		if( grid_path[x-1][y] == false )
+			key += 1000;
+		if( grid_path[x+1][y] == false )
+			key += 100;
+		if( grid_path[x][y-1] == false )
+			key += 10;
+		if( grid_path[x][y+1] == false )
+			key += 1;
+
+		switch( key )
+		{
+			case 1:
+				mvaddch( x, y, ACS_HLINE );
+				break;
+			case 10:
+				mvaddch( x, y, ACS_HLINE );
+				break;
+			case 11:
+				mvaddch( x, y, ACS_HLINE );
+				break;
+			case 100:
+				mvaddch( x, y, ACS_VLINE );
+				break;
+			case 101:
+				mvaddch( x, y, ACS_ULCORNER );
+				break;
+			case 110:
+				mvaddch( x, y, ACS_URCORNER );
+				break;
+			case 111:
+				mvaddch( x, y, ACS_TTEE );
+				break;
+			case 1000:
+				mvaddch( x, y, ACS_VLINE );
+				break;
+			case 1001:
+				mvaddch( x, y, ACS_LLCORNER );
+				break;
+			case 1010:
+				mvaddch( x, y, ACS_LRCORNER );
+				break;
+			case 1011:
+				mvaddch( x, y, ACS_BTEE );
+				break;
+			case 1100:
+				mvaddch( x, y, ACS_VLINE );
+				break;
+			case 1101:
+				mvaddch( x, y, ACS_LTEE );
+				break;
+			case 1110:
+				mvaddch( x, y, ACS_RTEE );
+				break;
+			case 1111:
+				mvaddch( x, y, ACS_PLUS );
+				break;
+		}
 	}
 
 	class Cell
@@ -113,5 +182,24 @@ namespace Maze
 
 			}
 	};
+
+	void init( void )
+	{
+		std::srand( maze_seed );
+		init_cardinal_points();
+		Cell root = Maze::Cell( NULL, maze_width / 2, maze_height / 2 );
+
+		for( int i = 1; i < maze_width * 2; i++ )
+		{
+			for( int k = 1; k < maze_height * 2; k++ )
+			{
+				if( grid_path[i][k] == true) continue;
+				draw_cell( i, k );
+			}
+		}
+
+		mvaddch( 2, 1, ' ');
+		mvaddch( maze_width * 2 - 1, Maze::maze_height * 2 - 2, ' ' );
+	}
 }
 #endif

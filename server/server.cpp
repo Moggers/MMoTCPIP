@@ -40,6 +40,12 @@ struct player
 
 int main( int argc, char * argv[] )
 {
+	if( argc != 4 )
+	{
+		fprintf( stderr, "Usage: ./server.o width height seed\n" );
+		exit( 1 );
+	}
+
 	struct player ply[32];
 	int plycount = 0;
 
@@ -78,7 +84,7 @@ int main( int argc, char * argv[] )
 	if(( rv = getaddrinfo( NULL, PORT, &hints, &ai )) != 0 )
 	{
 		fprintf( stderr, "selectserver: %s\n", gai_strerror( rv ) );
-		exit( 1 );
+		exit( 2 );
 	}
 
 	for( p = ai; p != NULL; p = p->ai_next )
@@ -101,7 +107,7 @@ int main( int argc, char * argv[] )
 	if( p == NULL )
 	{
 		fprintf( stderr, "selectserver: failed to bind\n");
-		exit( 2 );
+		exit( 3 );
 
 	}
 
@@ -110,7 +116,7 @@ int main( int argc, char * argv[] )
 	if( listen( listener, 10 ) == -1 )
 	{
 		perror( "listen" );
-		exit( 3 );
+		exit( 4 );
 	}
 
 	FD_SET( listener, &master );
@@ -123,7 +129,7 @@ int main( int argc, char * argv[] )
 		if( select( fdmax+1, &read_fds, NULL, NULL, NULL ) == -1 )
 		{
 			perror( "select" );
-			exit( 4 );
+			exit( 5 );
 		}
 
 		for( i = 0; i <= fdmax; i++ )
@@ -156,7 +162,9 @@ int main( int argc, char * argv[] )
 				}
 				else
 				{
-					if( ( nbytes = recv( i, buf, sizeof buf, 0 ) ) <= 0 )
+					printf( "Received something.\n" );
+					struct player tmp_ply;
+					if( ( nbytes = recv( i, &tmp_ply, sizeof( tmp_ply ), 0 ) ) <= 0 )
 					{
 						if( nbytes == 0 )
 						{
@@ -169,20 +177,12 @@ int main( int argc, char * argv[] )
 						close( i );
 						FD_CLR( i, &master );
 					}
-				}
-			}
-			else
-			{
-				for( j = 0; j <= fdmax; j++ )
-				{
-					if( FD_ISSET( j, &master ) )
+					else
 					{
-						if( j != listener && j != i )
+						printf( "Received position update from player: %d", tmp_ply.index );
+						for( int k = 0; k <= fdmax; j++ )
 						{
-							if( send( j, buf, nbytes, 0 ) == -1 )
-							{
-								perror( "send" );
-							}
+							send( k, &tmp_ply, sizeof( tmp_ply ), 0 ); 
 						}
 					}
 				}
