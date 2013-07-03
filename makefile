@@ -1,4 +1,4 @@
-all: clean main.cpp cell.o player.o server.o 
+all: clean client.cpp cell.o player.o server.o 
 	g++ -o client.o client.cpp -lncurses
 
 server.o: server.cpp
