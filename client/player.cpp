@@ -1,8 +1,20 @@
+#ifndef ENTITIES
+#define ENTITIES
+
 #include <ncurses.h>
 #include "cell.cpp"
+#define MAX_PLAYERS 32
 
 namespace Entities
 {
+	struct ply_update
+	{
+		int index;
+		int x;
+		int y;
+
+	};
+
 	class Player
 	{
 		public:
@@ -17,6 +29,12 @@ namespace Entities
 				old_pos[0] = 2;
 				old_pos[1] = 2;
 			}
+			void update( ply_update * src )
+			{
+				pos[0] = src->x;
+				pos[1] = src->y;
+			}
+
 			void draw( void )
 			{
 				mvaddch( old_pos[0], old_pos[1], ' ' );
@@ -54,4 +72,7 @@ namespace Entities
 				}
 			}
 	};
+
+	Player ply_list[MAX_PLAYERS];
 }
+#endif

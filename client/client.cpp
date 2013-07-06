@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include "cell.cpp"
 #include "player.cpp"
+#include "net.cpp"
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -30,23 +31,11 @@ struct init_struct
 	int player_id;
 };
 
-struct ply_update
-{
-	int index;
-	int x;
-	int y;
-};
-
 int main( int argc, char *argv[])
 {
 	//Networking variables
 	int sockfd, numbytes;
-	struct addrinfo hints, *servinfo, *p;
-	int rv;
-	char s[INET6_ADDRSTRLEN];
-
-	//List of players
-	Entities::Player ply[32];
+	int cl_id;
 
 	//Error checking on hostname input
 	if( argc != 2 )
@@ -55,49 +44,9 @@ int main( int argc, char *argv[])
 		exit( 1 );
 	}
 
-	//Prepare hints for getaddrinfo
-	memset( &hints, 0, sizeof( hints ) );
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	
-	//Get address info from hostname
-	if( ( rv = getaddrinfo( argv[1], PORT, &hints, &servinfo ) ) != 0 )
-	{
-		fprintf( stderr, "getaddrinfo: %s\n", gai_strerror( rv ) );
-		return 1;
-	}
-
-	//Iterate through the list of potential connections and connect to the first available
-	for( p = servinfo; p != NULL; p = p->ai_next )
-	{
-		if( ( sockfd = socket( p->ai_family, p->ai_socktype, p->ai_protocol ) ) == -1 )
-		{
-			perror( "client: socket" );
-			continue;
-		}
-
-		if( connect( sockfd, p->ai_addr, p->ai_addrlen ) == -1 )
-		{
-			close( sockfd);
-			perror( "client: connect" );
-			continue;
-		}
-
-		break;
-	}
-
-	if( p == NULL )
-	{
-		fprintf( stderr, "client: failed to connect\n");
-		return 2;
-	}
-	
-	//network to presentation, not sure what this is for
-	inet_ntop( p->ai_family, get_in_addr( ( struct sockaddr *)p->ai_addr ), s, sizeof( s ) );
-
-	//Free up the now not needed addressing info.
-	freeaddrinfo( servinfo );
-		
+	//Connect
+	sockfd = network::connect( argv[2] );
+			
 	//Receive initialization data.
 	struct init_struct tmpstruct;
 	if( ( numbytes = recv( sockfd, &tmpstruct, sizeof(tmpstruct), 0 ) ) == -1 )
@@ -107,9 +56,9 @@ int main( int argc, char *argv[])
 	}
 
 	//Populate fields with received data
-	int cl_id = tmpstruct.player_id;
-	ply[cl_id].pos[0] = 2;
-	ply[cl_id].pos[1] = 2;
+	cl_id = tmpstruct.player_id;
+	Entities::ply_list[cl_id].pos[0] = 2;
+	Entities::ply_list[cl_id].pos[1] = 2;
 	Maze::maze_width = tmpstruct.maze.maze_width; 
 	Maze::maze_height = tmpstruct.maze.maze_width;
 	Maze::maze_seed = tmpstruct.maze.maze_width;
@@ -121,7 +70,10 @@ int main( int argc, char *argv[])
 	curs_set( 0 );
 
 	//Initialize the maze
-	Maze::init( );
+	Maze::init();
+
+	//Disable blocking
+	timeout(1);
 
 	//Output help display
 	attron( A_BOLD );
@@ -129,32 +81,34 @@ int main( int argc, char *argv[])
 	attroff( A_BOLD );
 	mvaddstr( Maze::maze_width * 2 + 1, 1, "Move: hjkl:" );
 	mvaddstr( Maze::maze_width * 2 + 2, 1, "Quit: q" );
-	
+
+
+	pthread_create( &network::servthread, NULL, network::beginthread, NULL );
+
+	//Main loop
 	for( ; ; )
 	{
-		for( int i = 0; i < 32; i++ )
-		{
-			ply[i].draw();
-		}
-
-		refresh();
 		char key = getch();
 		if( key == 'q' )
 		{
 			break;
 		}
-		ply[cl_id].move( key );
-		
-		struct ply_update update;
-		update.index = cl_id;
-		update.x = ply[cl_id].pos[0];
-		update.y = ply[cl_id].pos[1];
-		
-		int status = send( sockfd, &update, sizeof( update ), 0 );
-		char str[64];
-		sprintf( str, "Sent %d bytes", status );
-		mvaddstr( Maze::maze_width * 2 + 3, 1, str ); 
-		
+		if( key == 'h' || key == 'j' || key == 'k' || key == 'l' )
+		{
+			Entities::ply_list[cl_id].move( key );
+			Entities::ply_update send_update;
+			send_update.index = cl_id;
+			send_update.x = Entities::ply_list[cl_id].pos[0];
+			send_update.y = Entities::ply_list[cl_id].pos[1];
+			send( sockfd, &send_update, sizeof( send_update ), 0 );
+		}
+
+		for( int i = 0; i < 32; i++ )
+		{
+			Entities::ply_list[i].draw();
+		}
+
+		refresh();
 	}
 
 	close( sockfd );
