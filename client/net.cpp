@@ -58,7 +58,7 @@ namespace network
 			}
 			break;
 		}
-
+		
 		if( p == NULL )
 		{
 			fprintf( stderr, "client: failed to connect\n" );

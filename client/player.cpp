@@ -31,14 +31,16 @@ namespace Entities
 			}
 			void update( ply_update * src )
 			{
+				old_pos[0] = pos[0];
+				old_pos[1] = pos[1];
 				pos[0] = src->x;
 				pos[1] = src->y;
 			}
 
-			void draw( void )
+			void draw( bool bold )
 			{
 				mvaddch( old_pos[0], old_pos[1], ' ' );
-				attron( A_BOLD );
+				if( bold )  attron( A_BOLD );
 				mvaddch( pos[0], pos[1], '@' );
 				attroff( A_BOLD );
 			}
