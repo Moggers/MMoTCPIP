@@ -1,3 +1,6 @@
-*.swap
-*.out
-*.o
+server/*.swap
+server/*.out
+server/*.o
+client/*.swap
+client/*.out
+client/*.o
