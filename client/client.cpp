@@ -45,7 +45,7 @@ int main( int argc, char *argv[])
 	}
 
 	//Connect
-	sockfd = network::connect( argv[2] );
+	sockfd = network::connect( argv[1] );
 			
 	//Receive initialization data.
 	struct init_struct tmpstruct;
