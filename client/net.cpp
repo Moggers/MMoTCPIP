@@ -10,7 +10,7 @@
 #include "player.cpp"
 #include <pthread.h>
 
-#define PORT "9034"
+#define PORT "1337"
 
 namespace network
 {

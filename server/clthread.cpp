@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define PORT "9034"
+#define PORT "1337"
 
 namespace clthread
 {
@@ -71,6 +71,7 @@ namespace clthread
 	//PThread method, one for each client
 	void * beginthread( void * param )
 	{
+		printf( "Starting a new client thread\n" );
 		int sockfd = ((struct thread_param*)param)->sockfd;
 		init_struct cl_init;
 		
